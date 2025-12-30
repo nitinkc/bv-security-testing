@@ -1,0 +1,121 @@
+# ZAP Scanning Configuration for BitVelocity API
+
+# Passive Scanning Rules
+rules:
+  - id: 10015  # Incomplete or No Cache-control Header Set
+    threshold: LOW
+  
+  - id: 10021  # X-Content-Type-Options Header Missing
+    threshold: MEDIUM
+  
+  - id: 10023  # Information Disclosure - Debug Error Messages
+    threshold: HIGH
+  
+  - id: 10027  # Information Disclosure - Suspicious Comments
+    threshold: LOW
+  
+  - id: 10038  # Content Security Policy (CSP) Header Not Set
+    threshold: MEDIUM
+  
+  - id: 10054  # Cookie Without SameSite Attribute
+    threshold: LOW
+  
+  - id: 10055  # CSP: Wildcard Directive
+    threshold: MEDIUM
+  
+  - id: 10096  # Timestamp Disclosure
+    threshold: INFO
+  
+  - id: 10098  # Cross-Domain Misconfiguration
+    threshold: MEDIUM
+
+# Active Scanning Rules
+activeScan:
+  - id: 40012  # Cross Site Scripting (Reflected)
+    threshold: LOW
+  
+  - id: 40014  # Cross Site Scripting (Persistent)
+    threshold: LOW
+  
+  - id: 40018  # SQL Injection
+    threshold: LOW
+  
+  - id: 40019  # SQL Injection - MySQL
+    threshold: LOW
+  
+  - id: 40020  # SQL Injection - Hypersonic SQL
+    threshold: LOW
+  
+  - id: 40022  # SQL Injection - PostgreSQL
+    threshold: LOW
+  
+  - id: 90019  # Server Side Code Injection
+    threshold: MEDIUM
+  
+  - id: 90020  # Remote OS Command Injection
+    threshold: MEDIUM
+
+# Target Configuration
+target:
+  baseUrl: http://localhost:8080
+  context: api
+  
+  # Include URLs
+  include:
+    - http://localhost:8080/api/.*
+  
+  # Exclude URLs
+  exclude:
+    - http://localhost:8080/actuator/.*
+    - http://localhost:8080/swagger-ui/.*
+    - http://localhost:8080/api-docs/.*
+
+# Authentication
+auth:
+  type: bearer
+  bearer:
+    token: ${AUTH_TOKEN}
+  
+  verification:
+    method: poll
+    url: http://localhost:8080/api/v1/users/me
+    indicators:
+      loggedIn: "userId"
+      loggedOut: "Unauthorized"
+
+# Scan Policy
+policy:
+  threshold: MEDIUM
+  strength: MEDIUM
+  
+  # Attack modes
+  modes:
+    - Spider
+    - AjaxSpider
+    - ActiveScan
+    - PassiveScan
+
+# Report Configuration
+report:
+  format:
+    - HTML
+    - JSON
+    - XML
+  
+  output:
+    - /zap/wrk/reports/zap-report.html
+    - /zap/wrk/reports/zap-report.json
+
+# Rate Limiting (to avoid overwhelming the service)
+rateLimit:
+  requestsPerSecond: 10
+  threadsPerHost: 5
+
+# False Positive Suppressions
+suppressions:
+  - alertRef: 10015
+    url: http://localhost:8080/api/v1/products
+    reason: "Cache-control not needed for this endpoint"
+  
+  - alertRef: 10096
+    reason: "Timestamp disclosure is expected in API responses"
